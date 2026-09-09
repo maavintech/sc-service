@@ -11,7 +11,10 @@ const Challan = sequelize.define('Challan', {
   challanNumber: { type: DataTypes.STRING(50), allowNull: false, unique: true },
   amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
   challanType: { type: DataTypes.STRING(100), allowNull: false },
-  offense: { type: DataTypes.STRING(255), allowNull: true },
+  // TEXT, not STRING(255): a vehicle with multiple violations joins their
+  // offence_details into one " | "-separated string (challanMapper.js) and
+  // easily overflows a fixed VARCHAR.
+  offense: { type: DataTypes.TEXT, allowNull: true },
   challanDate: { type: DataTypes.DATE, allowNull: false },
   dueDate: { type: DataTypes.DATE, allowNull: true },
   status: { type: DataTypes.ENUM('pending', 'paid', 'disputed', 'waived', 'disposed', 'cancelled'), defaultValue: 'pending' },
