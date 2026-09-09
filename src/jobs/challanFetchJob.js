@@ -69,6 +69,11 @@ async function runChallanFetchJob() {
           successCount++;
         } catch (err) {
           console.error(`[ChallanFetchJob] DB sync failed for ${result.vehicleNumber}:`, err.message);
+          // Flip this result to failed (the ULIP fetch worked, only the DB
+          // write didn't) so syncFailedRecords below persists it to
+          // ulip_failed_records instead of only logging to console.
+          result.success = false;
+          result.error = `DB sync failed: ${err.message}`;
           failedCount++;
         }
       }

@@ -7,7 +7,7 @@ const sequelize = require('../config/database');
 const RtoDetail = sequelize.define('RtoDetail', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
   vehicleId: { type: DataTypes.INTEGER, allowNull: false },
-  vehicleNumber: { type: DataTypes.STRING(20), allowNull: false },
+  vehicleNumber: { type: DataTypes.STRING(100), allowNull: false },
   bodyType: { type: DataTypes.STRING(50), allowNull: true },
   insuranceExpiry: { type: DataTypes.DATE, allowNull: true },
   insuranceCompany: { type: DataTypes.STRING(100), allowNull: true },

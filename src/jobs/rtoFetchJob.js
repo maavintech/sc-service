@@ -77,6 +77,15 @@ async function runRtoFetchJob() {
           }
         } catch (err) {
           console.error(`[RtoFetchJob] DB upsert failed for ${result.vehicleNumber}:`, err.message);
+          // Flip this result to failed (it started as success — the ULIP
+          // fetch worked, only the DB write didn't) so the syncFailedRecords
+          // call below persists it to ulip_failed_records instead of
+          // silently only logging to console. Without this, a write error
+          // (bad data, schema mismatch, etc.) was invisible outside this
+          // process's own stdout and any RETRY of a stale record for this
+          // vehicle would have been wrongly cleared as "now succeeded".
+          result.success = false;
+          result.error = `DB upsert failed: ${err.message}`;
           failedCount++;
         }
       }

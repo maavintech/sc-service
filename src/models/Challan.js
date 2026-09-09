@@ -7,7 +7,7 @@ const sequelize = require('../config/database');
 const Challan = sequelize.define('Challan', {
   id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
   vehicleId: { type: DataTypes.INTEGER, allowNull: false },
-  vehicleNumber: { type: DataTypes.STRING(20), allowNull: false },
+  vehicleNumber: { type: DataTypes.STRING(100), allowNull: false },
   challanNumber: { type: DataTypes.STRING(50), allowNull: false, unique: true },
   amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
   challanType: { type: DataTypes.STRING(100), allowNull: false },
