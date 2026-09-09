@@ -1,0 +1,173 @@
+{
+  "info": {
+    "name": "ULIP Service",
+    "description": "RTO/Challan lookup service for DriveInnovate. Fetches VAHAN registration details and e-Challan details from ULIP (DPIIT) for one or more vehicles. On-demand endpoints only — the scheduled cron jobs run in-process and are not exposed here.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "b6b0a5b0-6b0e-4c9a-8a0d-ulip-service-0001"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4501", "type": "string" },
+    { "key": "apiKey", "value": "{{ULIP_SERVICE_API_KEY}}", "type": "string" },
+    { "key": "vehicleNumber", "value": "MH12AB1234", "type": "string" }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      { "key": "key", "value": "x-api-key", "type": "string" },
+      { "key": "value", "value": "{{apiKey}}", "type": "string" },
+      { "key": "in", "value": "header", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "No auth required. Used for uptime checks."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "RTO",
+      "item": [
+        {
+          "name": "Get RTO Details — Single Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNumber\": \"{{vehicleNumber}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rto",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rto"]
+            },
+            "description": "Fetches VAHAN registration/insurance/tax details for a single vehicle via ULIP."
+          },
+          "response": []
+        },
+        {
+          "name": "Get RTO Details — Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNumbers\": [\n    \"MH12AB1234\",\n    \"DL3CAB5678\",\n    \"KA05MZ9012\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rto",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rto"]
+            },
+            "description": "Fetches VAHAN details for multiple vehicles. Runs with ULIP_BATCH_CONCURRENCY in-flight at once, paced by ULIP_BATCH_DELAY_MS between waves. Short-circuits remaining items if the daily ULIP quota is exhausted mid-batch (ULIP_QUOTA_EXCEEDED)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get RTO Details — Missing Body (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rto",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "rto"]
+            },
+            "description": "Expect 400: vehicleNumber or vehicleNumbers is required."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Challan",
+      "item": [
+        {
+          "name": "Get Challan Details — Single Vehicle",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNumber\": \"{{vehicleNumber}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/challan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "challan"]
+            },
+            "description": "Fetches e-Challan details for a single vehicle via ULIP."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Challan Details — Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleNumbers\": [\n    \"MH12AB1234\",\n    \"DL3CAB5678\",\n    \"KA05MZ9012\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/challan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "challan"]
+            },
+            "description": "Fetches e-Challan details for multiple vehicles. Same batching/quota behavior as the RTO batch endpoint."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Challan Details — Missing Body (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/challan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "challan"]
+            },
+            "description": "Expect 400: vehicleNumber or vehicleNumbers is required."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 require('dotenv').config();
 require('console.table');
 
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const express = require('express');
 const helmet = require('helmet');
 
@@ -26,6 +29,23 @@ app.use('/api/challan', apiKeyAuth, challanRoutes);
 
 const PORT = process.env.PORT || 4501;
 
+const { SSL_KEY, SSL_CERT, SSL_CA } = process.env;
+
+function loadSslOptions() {
+  if (!SSL_KEY || !SSL_CERT) return null;
+  try {
+    const options = {
+      key: fs.readFileSync(SSL_KEY),
+      cert: fs.readFileSync(SSL_CERT),
+    };
+    if (SSL_CA) options.ca = fs.readFileSync(SSL_CA);
+    return options;
+  } catch (err) {
+    console.error('[ssl] failed to load certificates, falling back to HTTP:', err.message);
+    return null;
+  }
+}
+
 async function start() {
   if (!process.env.ULIP_USERNAME || !process.env.ULIP_PASSWORD) {
     console.warn('[ulip-service] ULIP_USERNAME/ULIP_PASSWORD are not set — every ULIP call will fail at login.');
@@ -40,7 +60,15 @@ async function start() {
   startChallanFetchJob();
   startRetryFailedRecordsJob();
 
-  app.listen(PORT, () => console.log(`[ulip-service] listening on port ${PORT}`));
+  const sslOptions = loadSslOptions();
+
+  if (sslOptions) {
+    https.createServer(sslOptions, app)
+      .listen(PORT, () => console.log(`[ulip-service] listening on ${PORT} (https)`));
+  } else {
+    http.createServer(app)
+      .listen(PORT, () => console.log(`[ulip-service] listening on ${PORT} (http)`));
+  }
 }
 
 start().catch((err) => {
