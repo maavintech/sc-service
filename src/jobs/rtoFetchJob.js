@@ -42,6 +42,11 @@ async function runRtoFetchJob() {
     for (const client of clients) {
       if (quotaHit) break;
 
+      // clientId = this exact account's id, NEVER a clientIds network-expansion
+      // array (that's the read API's dealer/papa cross-account visibility
+      // rule — irrelevant here). A dealer/papa only gets THEIR OWN directly
+      // owned vehicles fetched; their downstream clients are fetched only via
+      // their own separate row in `clients` above, each scoped to their own id.
       const vehicles = await Vehicle.findAll({ where: { clientId: client.id, status: 'active' }, attributes: ['id', 'vehicleNumber'] });
       const withNumbers = vehicles.filter((v) => v.vehicleNumber);
       if (!withNumbers.length) continue;

@@ -36,6 +36,11 @@ async function getAccountIdsWithFeature(featureKey) {
   const ids = new Set();
   directGrants.forEach((g) => ids.add(g.userId));
   moduleGrants.forEach((g) => ids.add(g.userId));
+  // Every papa account (parentId===0) holds every feature implicitly — same
+  // as getFeatureKeySet. This makes papa's OWN directly-owned vehicles
+  // (Vehicle.clientId === papaId) eligible without a grant row; it does NOT
+  // pull in a papa's downstream network — each descendant client still needs
+  // its own grant (direct/module/package) and is fetched under its own id.
   papas.forEach((p) => ids.add(p.id));
 
   const packageIds = packageModules.map((pm) => pm.packageId);
