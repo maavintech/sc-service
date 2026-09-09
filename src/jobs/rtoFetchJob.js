@@ -99,6 +99,5 @@ function startRtoFetchJob() {
 module.exports = { startRtoFetchJob, runRtoFetchJob };
 
 if (require.main === module) {
-  require('dotenv').config();
   runRtoFetchJob().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); });
 }

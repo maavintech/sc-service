@@ -1,3 +1,12 @@
+// Must run before reading any process.env.DB_* below. server.js already
+// calls this as its own first line (dotenv.config() is idempotent — a
+// second call is a no-op), but a job file run standalone (`node src/jobs/
+// rtoFetchJob.js`) requires this module — and therefore constructs the
+// Sequelize instance below — BEFORE it reaches its own dotenv.config() call
+// further down the file. Loading it here, at the actual point of use,
+// guarantees DB_HOST etc. are populated regardless of entry point instead
+// of relying on every caller getting the require order right.
+require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
 // This service connects to DriveInnovate's OWN MySQL database — not a

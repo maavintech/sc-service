@@ -74,6 +74,5 @@ function startRetryFailedRecordsJob() {
 module.exports = { startRetryFailedRecordsJob, runRetryFailedRecordsJob };
 
 if (require.main === module) {
-  require('dotenv').config();
   runRetryFailedRecordsJob().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); });
 }
