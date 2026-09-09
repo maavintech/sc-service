@@ -30,7 +30,15 @@ async function getAccountIdsWithFeature(featureKey) {
     UserFeatureGrant.findAll({ where: { featureId: feature.id }, attributes: ['userId'] }),
     UserModuleGrant.findAll({ where: { moduleId: feature.moduleId }, attributes: ['userId'] }),
     PermissionPackageModule.findAll({ where: { moduleId: feature.moduleId }, attributes: ['packageId'] }),
-    User.findAll({ where: { parentId: 0 }, attributes: ['id'] }),
+    // di_user.parent_id is NULLable with no default — the root papa account's
+    // row can have parent_id = NULL rather than a literal 0 (nothing in the
+    // codebase ever explicitly writes 0 at account-creation time). Every
+    // OTHER "is this papa?" check in driveinnovate/server is a JS-level
+    // Number(user.parentId) === 0 comparison done after loading the row —
+    // and Number(null) === 0 is true in JS — so those checks quietly accept
+    // NULL. A SQL `parent_id = 0` filter does NOT (SQL NULL = 0 is never
+    // true), so it must match both explicitly here.
+    User.findAll({ where: { [Op.or]: [{ parentId: 0 }, { parentId: null }] }, attributes: ['id'] }),
   ]);
 
   const ids = new Set();
