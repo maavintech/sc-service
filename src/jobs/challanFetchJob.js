@@ -1,22 +1,26 @@
 /**
  * challanFetchJob.js
  *
- * Runs every 8h. For every account with ulipChallanEnabled=true and
- * status='active', fetches challan data for its active vehicles and upserts
- * challans (src/services/challanMapper.js — one row per pending/disposed
- * item, keyed on challanNumber, cancellation sweep for challans withdrawn at
- * source). Only ever touches rows this job itself created (source:'ulip').
+ * Runs every 8h. For every ACTIVE account that holds the 'canViewChallans'
+ * Permission Catalog feature (the same permission that gates the web read
+ * API — see permissionResolver.js), fetches challan data for its active
+ * vehicles and upserts challans (src/services/challanMapper.js — one row per
+ * pending/disposed item, keyed on challanNumber, cancellation sweep for
+ * challans withdrawn at source). Only ever touches rows this job itself
+ * created (source:'ulip').
  */
 
 'use strict';
 
 const cron = require('node-cron');
+const { Op } = require('sequelize');
 const { User, Vehicle, Challan } = require('../models');
 const { getChallanDetails } = require('../services/echallanService');
 const { runBatch } = require('../utils/batchRunner');
 const { syncVehicleChallans } = require('../services/challanMapper');
 const { startRun, finishRun } = require('../services/jobRunTracker');
 const { REQUEST_NAMES, syncFailedRecords, recordBatchFailure } = require('../services/failedRecordsService');
+const { getAccountIdsWithFeature } = require('../services/permissionResolver');
 
 const SCHEDULE = process.env.CHALLAN_JOB_CRON || '0 */8 * * *';
 const TIMEZONE = process.env.ULIP_JOB_TZ || 'Asia/Kolkata';
@@ -26,8 +30,11 @@ async function runChallanFetchJob() {
   let totalVehicles = 0, successCount = 0, failedCount = 0, quotaHit = false;
 
   try {
-    const clients = await User.findAll({ where: { status: 'active', ulipChallanEnabled: true }, attributes: ['id'] });
-    console.log(`[ChallanFetchJob] ${clients.length} account(s) with ulipChallanEnabled=true`);
+    const enabledIds = await getAccountIdsWithFeature('canViewChallans');
+    const clients = enabledIds.size
+      ? await User.findAll({ where: { status: 'active', id: { [Op.in]: [...enabledIds] } }, attributes: ['id'] })
+      : [];
+    console.log(`[ChallanFetchJob] ${clients.length} active account(s) hold canViewChallans`);
 
     for (const client of clients) {
       if (quotaHit) break;

@@ -8,9 +8,10 @@ being its own process against a shared schema.
 
 ## What it reads/writes in DriveInnovate's database
 
-- **Reads only**: `di_user` (which accounts have `ulipRtoEnabled`/
-  `ulipChallanEnabled` set, and are `status='active'`), `di_user_vehicle`
-  (which of that account's vehicles are `status='active'`).
+- **Reads only**: `di_user` (`status='active'`, `parent_id`), the Permission
+  Catalog tables (`di_permission_feature`, `di_permission_package_module`,
+  `di_user_feature_grant`, `di_user_module_grant`, `di_user_package_grant`),
+  `di_user_vehicle` (which of an account's vehicles are `status='active'`).
 - **Writes**: `rto_details`, `challans` — the SAME tables DriveInnovate's own
   API (`GET /api/rto`, `GET /api/challans`) reads, so there is one data shape,
   one source of truth.
@@ -18,11 +19,19 @@ being its own process against a shared schema.
   (one row per scheduled run — start/end/duration/counts/quota-hit) and
   `ulip_failed_records` (per-vehicle failures pending retry).
 
-The per-account `ulipRtoEnabled`/`ulipChallanEnabled` flags are set by
-papa/dealer from DriveInnovate's client management UI — they control whether
-the jobs fetch that account at all. Whether a *logged-in user* can then see
-the already-stored data is a separate check (`canViewRTO`/`canViewChallans`
-permission features), enforced entirely on DriveInnovate's side.
+**Who gets fetched is decided by the Permission Catalog**, not a bespoke
+account flag: `src/services/permissionResolver.js` resolves the same
+`canViewRTO`/`canViewChallans` features DriveInnovate's read API already
+gates on (direct feature grant, OR a grant of their module, OR a grant of any
+package containing that module — papa holds every feature implicitly),
+mirroring `driveinnovate/server/src/services/permission.service.js#
+getFeatureKeySet`. Papa/dealer grants these from a client's **Permissions**
+tab (Permission Catalog → "RTO & Challan" module) exactly like every other
+feature — there is no separate ULIP-specific toggle anywhere. The same
+Permission Catalog entry is therefore the single source of truth for both
+"can this account's vehicles be fetched" (this service) and "can a logged-in
+user of the account see the stored data" (DriveInnovate's `requirePermission`
+on the read API).
 
 ## Scheduled jobs
 

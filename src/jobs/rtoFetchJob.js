@@ -2,10 +2,12 @@
  * rtoFetchJob.js
  *
  * Runs weekly, Monday 09:00 IST (RTO/insurance/tax data changes slowly — no
- * need for the challan job's 8h cadence). For every account with
- * ulipRtoEnabled=true and status='active', fetches VAHAN data for its active
- * vehicles and upserts rto_details (src/services/rtoMapper.js — never lets a
- * blank/not-found response overwrite a row that already holds real data).
+ * need for the challan job's 8h cadence). For every ACTIVE account that
+ * holds the 'canViewRTO' Permission Catalog feature (the same permission
+ * that gates the web read API — see permissionResolver.js), fetches VAHAN
+ * data for its active vehicles and upserts rto_details
+ * (src/services/rtoMapper.js — never lets a blank/not-found response
+ * overwrite a row that already holds real data).
  *
  * Records one ulip_job_runs row per run and syncs ulip_failed_records per
  * client so retryFailedRecordsJob can pick up anything that failed.
@@ -14,12 +16,14 @@
 'use strict';
 
 const cron = require('node-cron');
+const { Op } = require('sequelize');
 const { User, Vehicle, RtoDetail } = require('../models');
 const { getRtoDetails } = require('../services/vahanService');
 const { runBatch } = require('../utils/batchRunner');
 const { upsertRtoDetail, recordRtoFetchError } = require('../services/rtoMapper');
 const { startRun, finishRun } = require('../services/jobRunTracker');
 const { REQUEST_NAMES, syncFailedRecords, recordBatchFailure } = require('../services/failedRecordsService');
+const { getAccountIdsWithFeature } = require('../services/permissionResolver');
 
 const SCHEDULE = process.env.RTO_JOB_CRON || '0 9 * * 1'; // Monday 09:00
 const TIMEZONE = process.env.ULIP_JOB_TZ || 'Asia/Kolkata';
@@ -29,8 +33,11 @@ async function runRtoFetchJob() {
   let totalVehicles = 0, successCount = 0, failedCount = 0, quotaHit = false;
 
   try {
-    const clients = await User.findAll({ where: { status: 'active', ulipRtoEnabled: true }, attributes: ['id'] });
-    console.log(`[RtoFetchJob] ${clients.length} account(s) with ulipRtoEnabled=true`);
+    const enabledIds = await getAccountIdsWithFeature('canViewRTO');
+    const clients = enabledIds.size
+      ? await User.findAll({ where: { status: 'active', id: { [Op.in]: [...enabledIds] } }, attributes: ['id'] })
+      : [];
+    console.log(`[RtoFetchJob] ${clients.length} active account(s) hold canViewRTO`);
 
     for (const client of clients) {
       if (quotaHit) break;
